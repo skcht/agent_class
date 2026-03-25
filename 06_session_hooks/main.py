@@ -2,8 +2,6 @@
 06 — Session Hook：攔截與修改行為
 
 展示六種 hook 的使用方式。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -53,10 +51,10 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    async with await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "on_permission_request": PermissionHandler.approve_all,
-        "hooks": {
+    async with await client.create_session(
+        model="claude-sonnet-4.6",
+        on_permission_request=PermissionHandler.approve_all,
+        hooks={
             "on_session_start": on_session_start,
             "on_user_prompt_submitted": on_user_prompt_submitted,
             "on_pre_tool_use": on_pre_tool_use,
@@ -64,7 +62,7 @@ async def main():
             "on_session_end": on_session_end,
             "on_error_occurred": on_error_occurred,
         },
-    }) as session:
+    ) as session:
         print("\n>>> 送出請求...\n")
         response = await session.send_and_wait(
             "Explain what a Python decorator is in 2 sentences."

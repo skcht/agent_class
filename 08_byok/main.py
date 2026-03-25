@@ -3,8 +3,6 @@
 
 展示不需 Copilot 訂閱，使用 OpenAI / Azure / Ollama。
 根據環境變數自動偵測可用的 provider。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -51,11 +49,11 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    async with await client.create_session({
-        "model": model,
-        "on_permission_request": PermissionHandler.approve_all,
-        "provider": provider,
-    }) as session:
+    async with await client.create_session(
+        model=model,
+        on_permission_request=PermissionHandler.approve_all,
+        provider=provider,
+    ) as session:
         response = await session.send_and_wait(
             "What is the capital of Taiwan? Reply in one sentence."
         )

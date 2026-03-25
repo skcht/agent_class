@@ -29,6 +29,9 @@
 | 08 | [08_byok](08_byok/) | 自帶 API Key — OpenAI / Azure / Ollama |
 | 09 | [09_session_persistence](09_session_persistence/) | Session 持久化 — 斷線後恢復 |
 | 10 | [10_custom_agents](10_custom_agents/) | 自訂 Agent 角色 |
+| 11 | [11_agent_tool_scoping](11_agent_tool_scoping/) | Agent 工具範圍控制 — `tools`、`infer`、`agent` 屬性 |
+| 12 | [12_agent_mcp_servers](12_agent_mcp_servers/) | Agent 專屬 MCP 伺服器 — 每個 agent 掛載獨立 MCP |
+| 13 | [13_subagent_events](13_subagent_events/) | Sub-Agent 事件監控 — 生命週期事件與活動追蹤 |
 
 ## 執行方式
 
@@ -37,18 +40,11 @@ cd 01_hello_world
 python main.py
 ```
 
-## v0.2.0 語法差異
+## API 語法
 
-SDK v0.2.0 可能使用 keyword 參數而非 dict：
+本教學使用 v0.2.0 keyword 參數語法：
 
 ```python
-# dict 語法（本教學預設）
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-})
-
-# keyword 語法（v0.2.0，若 dict 報 TypeError 請改用）
 session = await client.create_session(
     model="claude-sonnet-4.6",
     on_permission_request=PermissionHandler.approve_all,

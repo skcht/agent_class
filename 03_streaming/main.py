@@ -1,9 +1,7 @@
 """
 03 — 即時串流輸出
 
-啟用 streaming: True，逐 token 即時顯示 AI 回覆。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
+啟用 streaming=True，逐 token 即時顯示 AI 回覆。
 """
 
 import asyncio
@@ -14,11 +12,11 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    session = await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "streaming": True,
-        "on_permission_request": PermissionHandler.approve_all,
-    })
+    session = await client.create_session(
+        model="claude-sonnet-4.6",
+        streaming=True,
+        on_permission_request=PermissionHandler.approve_all,
+    )
 
     done = asyncio.Event()
 

@@ -2,8 +2,6 @@
 09 — Session 持久化
 
 展示 session 建立、斷線、恢復的完整流程。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -19,11 +17,11 @@ async def main():
     # === 階段一：建立 session 並記住資訊 ===
     print("=== 階段一：建立 session ===\n")
 
-    session = await client.create_session({
-        "session_id": SESSION_ID,
-        "model": "claude-sonnet-4.6",
-        "on_permission_request": PermissionHandler.approve_all,
-    })
+    session = await client.create_session(
+        session_id=SESSION_ID,
+        model="claude-sonnet-4.6",
+        on_permission_request=PermissionHandler.approve_all,
+    )
 
     response = await session.send_and_wait(
         "Remember this: my favorite color is blue and my name is Alice. "
@@ -46,9 +44,10 @@ async def main():
     # === 階段二：恢復 session 並驗證上下文 ===
     print("=== 階段二：恢復 session ===\n")
 
-    resumed = await client.resume_session(SESSION_ID, {
-        "on_permission_request": PermissionHandler.approve_all,
-    })
+    resumed = await client.resume_session(
+        SESSION_ID,
+        on_permission_request=PermissionHandler.approve_all,
+    )
 
     response = await resumed.send_and_wait(
         "What is my favorite color and what is my name?"

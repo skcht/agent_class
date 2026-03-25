@@ -2,8 +2,6 @@
 02 — 事件驅動訊息模式
 
 展示非阻塞 send() + session.on() 事件處理器。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -14,10 +12,10 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    session = await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "on_permission_request": PermissionHandler.approve_all,
-    })
+    session = await client.create_session(
+        model="claude-sonnet-4.6",
+        on_permission_request=PermissionHandler.approve_all,
+    )
 
     done = asyncio.Event()
     message_count = 0

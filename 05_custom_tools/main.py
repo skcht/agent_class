@@ -2,8 +2,6 @@
 05 — 自訂工具
 
 展示 @define_tool + Pydantic BaseModel 定義自訂工具。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -56,11 +54,11 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    async with await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "tools": [get_weather, calculator],
-        "on_permission_request": PermissionHandler.approve_all,
-    }) as session:
+    async with await client.create_session(
+        model="claude-sonnet-4.6",
+        tools=[get_weather, calculator],
+        on_permission_request=PermissionHandler.approve_all,
+    ) as session:
         # 測試天氣工具
         print(">>> 查詢天氣...\n")
         response = await session.send_and_wait(

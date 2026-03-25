@@ -2,8 +2,6 @@
 04 — 自訂權限處理器
 
 展示選擇性允許/拒絕工具呼叫。
-
-若 dict 語法報 TypeError，請改用 keyword 語法。
 """
 
 import asyncio
@@ -37,10 +35,10 @@ async def main():
     client = CopilotClient()
     await client.start()
 
-    async with await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "on_permission_request": on_permission_request,
-    }) as session:
+    async with await client.create_session(
+        model="claude-sonnet-4.6",
+        on_permission_request=on_permission_request,
+    ) as session:
         # 這個請求可能觸發 shell 或 write 操作，會被攔截
         print(">>> 送出請求（可能觸發被拒絕的操作）...\n")
         response = await session.send_and_wait(
