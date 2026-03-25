@@ -1,0 +1,9 @@
+[project]
+name = "agent-class"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "github-copilot-sdk>=0.2.0",
+    "pydantic>=2.0",
+]
