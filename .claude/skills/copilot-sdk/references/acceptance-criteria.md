@@ -5,54 +5,35 @@
 ### Correct
 ```python
 import asyncio
-from copilot import CopilotClient, PermissionHandler
+from copilot import CopilotClient
+from copilot.session import PermissionHandler
 
 async def main():
     client = CopilotClient()
     await client.start()
 
-    # on_permission_request is REQUIRED
-    session = await client.create_session({
-        "model": "claude-sonnet-4.6",
-        "on_permission_request": PermissionHandler.approve_all,
-    })
+    session = await client.create_session(
+        on_permission_request=PermissionHandler.approve_all,
+        model="gpt-4.1",
+    )
 
-    done = asyncio.Event()
+    response = await session.send_and_wait({"prompt": "Hello!"})
+    print(response.data.content)
 
-    def on_event(event):
-        if event.type.value == "assistant.message":
-            print(event.data.content)
-        elif event.type.value == "session.idle":
-            done.set()
-
-    session.on(on_event)
-    await session.send("Hello!")
-    await done.wait()
-
-    await session.disconnect()
     await client.stop()
 
 asyncio.run(main())
 ```
 
-### Also Correct (v0.2.0 keyword-only syntax)
-```python
-session = await client.create_session(
-    model="gpt-5",
-    on_permission_request=PermissionHandler.approve_all,
-)
-response = await session.send_and_wait("Hello!")
-```
-
 ### Incorrect
 ```python
 # WRONG — Missing on_permission_request (it's required)
-session = await client.create_session({"model": "gpt-5"})
+session = await client.create_session(model="gpt-4.1")
 ```
 
 ```python
-# WRONG — send_and_wait takes a string, not a dict
-response = await session.send_and_wait({"prompt": "Hello"})
+# WRONG — send_and_wait takes a dict with "prompt" key
+response = await session.send_and_wait("Hello")
 ```
 
 ```python
@@ -71,15 +52,22 @@ import copilot_sdk
 client = CopilotClient(SubprocessConfig(github_token="ghp_abc123"))
 ```
 
+```python
+# WRONG — Using old event string comparison instead of enum
+if event.type.value == "assistant.message_delta":  # Works but prefer enum
+# Better:
+if event.type == SessionEventType.ASSISTANT_MESSAGE_DELTA:
+```
+
 ## Context Manager
 
 ### Correct
 ```python
-async with await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-}) as session:
-    await session.send("Hello")
+async with await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+) as session:
+    await session.send({"prompt": "Hello"})
     # session.disconnect() called automatically
 ```
 
@@ -87,29 +75,30 @@ async with await client.create_session({
 
 ### Correct
 ```python
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "streaming": True,
-    "on_permission_request": PermissionHandler.approve_all,
-})
+import sys
+from copilot.generated.session_events import SessionEventType
 
-done = asyncio.Event()
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    streaming=True,
+)
 
 def handle_event(event):
-    if event.type.value == "assistant.message_delta":
-        print(event.data.delta_content or "", end="", flush=True)
-    elif event.type.value == "session.idle":
-        done.set()
+    if event.type == SessionEventType.ASSISTANT_MESSAGE_DELTA:
+        sys.stdout.write(event.data.delta_content or "")
+        sys.stdout.flush()
+    elif event.type == SessionEventType.SESSION_IDLE:
+        print()
 
 session.on(handle_event)
-await session.send("Write a haiku")
-await done.wait()
+await session.send_and_wait({"prompt": "Write a haiku"})
 ```
 
 ### Incorrect
 ```python
 # WRONG — Missing on_permission_request
-session = await client.create_session({"model": "claude-sonnet-4.6", "streaming": True})
+session = await client.create_session(model="gpt-4.1", streaming=True)
 ```
 
 ## Custom Tools
@@ -117,7 +106,7 @@ session = await client.create_session({"model": "claude-sonnet-4.6", "streaming"
 ### Correct
 ```python
 from pydantic import BaseModel, Field
-from copilot import define_tool
+from copilot.tools import define_tool
 
 class MyParams(BaseModel):
     value: str = Field(description="Input value")
@@ -126,11 +115,11 @@ class MyParams(BaseModel):
 async def process_value(params: MyParams) -> str:
     return f"Processed: {params.value}"
 
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "tools": [process_value],
-    "on_permission_request": PermissionHandler.approve_all,
-})
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    tools=[process_value],
+)
 ```
 
 ### Also Correct (low-level API without Pydantic)
@@ -140,11 +129,11 @@ from copilot.tools import Tool
 async def my_handler(invocation):
     return {"textResultForLlm": "result", "resultType": "success"}
 
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "tools": [Tool(name="my_tool", description="...", parameters={...}, handler=my_handler)],
-    "on_permission_request": PermissionHandler.approve_all,
-})
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    tools=[Tool(name="my_tool", description="...", parameters={...}, handler=my_handler)],
+)
 ```
 
 ### Incorrect
@@ -166,52 +155,57 @@ async def bad_tool(city: str) -> dict:
 
 ### Correct
 ```python
-from copilot import PermissionRequest, PermissionRequestResult
+from copilot.session import PermissionRequestResult
 
-def on_permission_request(request: PermissionRequest, invocation: dict) -> PermissionRequestResult:
+def on_permission_request(request, invocation):
     if request.kind.value == "shell":
         return PermissionRequestResult(kind="denied-interactively-by-user")
     return PermissionRequestResult(kind="approved")
 
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": on_permission_request,
-})
+session = await client.create_session(
+    on_permission_request=on_permission_request,
+    model="gpt-4.1",
+)
+```
+
+### Also Correct (lambda shorthand)
+```python
+session = await client.create_session(
+    on_permission_request=lambda req, inv: PermissionRequestResult(kind="approved"),
+    model="gpt-4.1",
+)
 ```
 
 ### Incorrect
 ```python
 # WRONG — Omitting on_permission_request entirely
-session = await client.create_session({"model": "gpt-5"})
+session = await client.create_session(model="gpt-4.1")
 ```
 
-## Hooks — Pre Tool Use
+## Hooks
 
 ### Correct
 ```python
 async def on_pre_tool_use(input_data, invocation):
     if input_data["toolName"] in ["shell", "bash"]:
-        return {
-            "permissionDecision": "deny",
-            "permissionDecisionReason": "Shell access not permitted",
-        }
+        return {"permissionDecision": "deny", "permissionDecisionReason": "Shell blocked"}
     return {"permissionDecision": "allow"}
 
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-    "hooks": {"on_pre_tool_use": on_pre_tool_use},
-})
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    hooks={"on_pre_tool_use": on_pre_tool_use},
+)
 ```
 
 ## MCP Server Integration
 
 ### Correct
 ```python
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-    "mcp_servers": {
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    mcp_servers={
         "github": {
             "type": "http",
             "url": "https://api.githubcopilot.com/mcp/",
@@ -224,7 +218,7 @@ session = await client.create_session({
             "tools": ["*"],
         },
     },
-})
+)
 ```
 
 ## BYOK (Bring Your Own Key)
@@ -233,47 +227,70 @@ session = await client.create_session({
 ```python
 import os
 
-session = await client.create_session({
-    "model": "gpt-4",
-    "on_permission_request": PermissionHandler.approve_all,
-    "provider": {
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4",
+    provider={
         "type": "openai",
         "base_url": "https://api.openai.com/v1",
         "api_key": os.environ["OPENAI_API_KEY"],
     },
-})
+)
 ```
 
 ### Also Correct (Azure — must use type: "azure")
 ```python
-session = await client.create_session({
-    "model": "gpt-4",
-    "on_permission_request": PermissionHandler.approve_all,
-    "provider": {
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4",
+    provider={
         "type": "azure",
         "base_url": "https://my-resource.openai.azure.com",
         "api_key": os.environ["AZURE_OPENAI_KEY"],
         "azure": {"api_version": "2024-10-21"},
     },
-})
+)
+```
+
+### Also Correct (Azure AI Foundry — OpenAI-compatible endpoint)
+```python
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-5.2-codex",
+    provider={
+        "type": "openai",
+        "base_url": "https://your-resource.openai.azure.com/openai/v1/",
+        "wire_api": "responses",
+        "api_key": os.environ["FOUNDRY_API_KEY"],
+    },
+)
 ```
 
 ### Incorrect
 ```python
 # WRONG — Hardcoded API key in source code
-session = await client.create_session({
-    "provider": {"api_key": "sk-abc123def456"},
-})
+session = await client.create_session(
+    provider={"api_key": "sk-abc123def456"},
+)
 ```
 
 ```python
-# WRONG — Using type: "openai" for Azure endpoint
-session = await client.create_session({
-    "provider": {
+# WRONG — Using type: "openai" for native Azure endpoint
+session = await client.create_session(
+    provider={
         "type": "openai",  # Should be "azure" for *.openai.azure.com
         "base_url": "https://my-resource.openai.azure.com",
     },
-})
+)
+```
+
+```python
+# WRONG — Missing model with BYOK provider
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    provider={"type": "openai", "base_url": "..."},
+)
+# model is REQUIRED when using a custom provider
 ```
 
 ## Session Persistence
@@ -281,17 +298,17 @@ session = await client.create_session({
 ### Correct
 ```python
 # Create resumable session
-session = await client.create_session({
-    "session_id": "project-alpha-task-1",
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-})
-await session.send("Remember this context")
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    session_id="project-alpha-task-1",
+)
 
-# Resume later
-resumed = await client.resume_session("project-alpha-task-1", {
-    "on_permission_request": PermissionHandler.approve_all,
-})
+# Resume later — on_permission_request required again
+resumed = await client.resume_session(
+    "project-alpha-task-1",
+    on_permission_request=PermissionHandler.approve_all,
+)
 ```
 
 ### Incorrect
@@ -300,22 +317,79 @@ resumed = await client.resume_session("project-alpha-task-1", {
 resumed = await client.resume_session("project-alpha-task-1")
 ```
 
+## Steering & Queueing
+
+### Correct
+```python
+# Start a task
+await session.send({"prompt": "Refactor the auth module"})
+
+# Steer the current turn
+await session.send({"prompt": "Use JWT instead", "mode": "immediate"})
+
+# Queue for after current turn
+await session.send({"prompt": "Then update docs", "mode": "enqueue"})
+```
+
+### Incorrect
+```python
+# WRONG — mode is part of the options dict, not a kwarg
+await session.send({"prompt": "..."}, mode="immediate")
+```
+
 ## Custom Agents
 
 ### Correct
 ```python
-session = await client.create_session({
-    "model": "claude-sonnet-4.6",
-    "on_permission_request": PermissionHandler.approve_all,
-    "custom_agents": [
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    custom_agents=[
         {
             "name": "code-reviewer",
             "display_name": "Code Reviewer",
             "description": "Reviews code for bugs and best practices",
             "prompt": "You are an expert code reviewer...",
+            "tools": ["grep", "glob", "view"],
         },
     ],
-})
+    agent="code-reviewer",  # Pre-select this agent
+)
+```
+
+## Skills
+
+### Correct
+```python
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    skill_directories=["./skills"],
+    disabled_skills=["unused-skill"],
+)
+```
+
+## Client Configuration
+
+### Correct
+```python
+# External CLI server
+client = CopilotClient({"cli_url": "localhost:4321"})
+
+# Custom subprocess config
+from copilot import SubprocessConfig
+client = CopilotClient(SubprocessConfig(
+    cli_path="/path/to/copilot",
+    log_level="debug",
+))
+```
+
+### Incorrect
+```python
+# WRONG — ExternalServerConfig is not the dict syntax
+from copilot import ExternalServerConfig
+client = CopilotClient(ExternalServerConfig(url="localhost:4321"))
+# Use dict syntax instead: CopilotClient({"cli_url": "localhost:4321"})
 ```
 
 ## Image Support
@@ -323,12 +397,37 @@ session = await client.create_session({
 ### Correct
 ```python
 # File attachment
-await session.send("What's in this image?", attachments=[
+await session.send({"prompt": "What's in this image?"}, attachments=[
     {"type": "file", "path": "/path/to/image.jpg"},
 ])
 
 # Blob attachment
-await session.send("Describe this", attachments=[
+await session.send({"prompt": "Describe this"}, attachments=[
     {"type": "blob", "data": base64_data, "mimeType": "image/png"},
 ])
+```
+
+## System Message
+
+### Correct
+```python
+# Simple append
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    system_message={"content": "Always be concise."},
+)
+
+# Per-section customization
+session = await client.create_session(
+    on_permission_request=PermissionHandler.approve_all,
+    model="gpt-4.1",
+    system_message={
+        "mode": "customize",
+        "sections": {
+            "identity": {"action": "replace", "content": "You are a security auditor."},
+            "tone": {"action": "remove"},
+        },
+    },
+)
 ```

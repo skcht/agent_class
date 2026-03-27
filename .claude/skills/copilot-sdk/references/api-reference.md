@@ -7,24 +7,26 @@
 - Tool Types
 - Permission Types
 - Hook Types
-- Event Types
 - System Message Types
 - Attachment Types
+- Response Types
 
 ---
 
 ## CopilotClient
 
 ```python
-from copilot import CopilotClient, SubprocessConfig, ExternalServerConfig
+from copilot import CopilotClient, SubprocessConfig
 
 CopilotClient(
-    config: SubprocessConfig | ExternalServerConfig | None = None,
+    config: SubprocessConfig | dict | None = None,
     *,
     auto_start: bool = True,
     on_list_models: Callable | None = None,
 )
 ```
+
+When passing a dict, use `{"cli_url": "localhost:4321"}` to connect to an external CLI server.
 
 ### Connection Methods
 
@@ -38,8 +40,8 @@ client.get_state() -> ConnectionState  # "disconnected"|"connecting"|"connected"
 ### Session Methods
 
 ```python
-await client.create_session(config_dict) -> CopilotSession
-await client.resume_session(session_id, config_dict) -> CopilotSession
+await client.create_session(**kwargs) -> CopilotSession
+await client.resume_session(session_id, **kwargs) -> CopilotSession
 await client.delete_session(session_id) -> None
 await client.list_sessions(filter=None) -> list[SessionMetadata]
 await client.get_last_session_id() -> str | None
@@ -59,9 +61,7 @@ await client.list_models() -> list[ModelInfo]
 ### Event Subscription
 
 ```python
-# All lifecycle events
 unsubscribe = client.on(handler)
-# Specific event type
 unsubscribe = client.on("session.created", handler)
 ```
 
@@ -75,10 +75,11 @@ unsubscribe = client.on("session.created", handler)
 
 ```python
 # Non-blocking — returns message ID
-msg_id = await session.send(prompt: str, *, attachments=None, mode=None) -> str
+msg_id = await session.send(options: dict, *, attachments=None) -> str
+# options: {"prompt": str, "mode": "enqueue"|"immediate"}
 
 # Blocking — waits for session.idle, returns final assistant message
-event = await session.send_and_wait(prompt: str, *, attachments=None, mode=None, timeout=60.0) -> SessionEvent | None
+event = await session.send_and_wait(options: dict, *, attachments=None, timeout=60.0) -> SessionEvent | None
 ```
 
 ### Event Subscription
@@ -97,10 +98,10 @@ await session.abort() -> None
 ### Lifecycle
 
 ```python
-await session.disconnect() -> None      # Preferred — preserves data on disk
+await session.disconnect() -> None      # Preserves data on disk for later resume
 await session.destroy() -> None          # Deprecated — use disconnect()
 session.session_id -> str
-session.workspace_path -> str | None     # Infinite sessions workspace
+session.workspace_path -> str | None
 ```
 
 ### Model & Logging
@@ -113,8 +114,8 @@ await session.log(message: str, *, level=None, ephemeral=None) -> None
 ### Context Manager
 
 ```python
-async with await client.create_session({...}) as session:
-    await session.send("Hello")
+async with await client.create_session(**kwargs) as session:
+    await session.send({"prompt": "Hello"})
     # session.disconnect() called automatically
 ```
 
@@ -125,6 +126,8 @@ async with await client.create_session({...}) as session:
 ### SubprocessConfig
 
 ```python
+from copilot import SubprocessConfig
+
 SubprocessConfig(
     cli_path: str | None = None,
     cli_args: list[str] = [],
@@ -139,17 +142,11 @@ SubprocessConfig(
 )
 ```
 
-### ExternalServerConfig
-
-```python
-ExternalServerConfig(url: str)  # "host:port", "http://host:port", or "port"
-```
-
-### SessionConfig (dict keys for create_session)
+### create_session keyword arguments
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `model` | str | Model ID (e.g., `"gpt-5"`, `"claude-sonnet-4"`) |
+| `model` | str | Model ID (e.g., `"gpt-4.1"`, `"claude-sonnet-4"`) |
 | `on_permission_request` | callable | **Required.** Permission handler |
 | `session_id` | str | Custom ID for resumable sessions |
 | `streaming` | bool | Enable streaming delta events |
@@ -158,42 +155,42 @@ ExternalServerConfig(url: str)  # "host:port", "http://host:port", or "port"
 | `provider` | dict | BYOK provider config |
 | `mcp_servers` | dict | MCP server configurations |
 | `hooks` | dict | Session hooks |
-| `on_user_input_request` | callable | User input handler (enables ask_user tool) |
+| `on_user_input_request` | callable | User input handler |
 | `custom_agents` | list[dict] | Custom agent definitions |
-| `reasoning_effort` | str | `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` |
+| `agent` | str | Pre-select a custom agent by name |
+| `reasoning_effort` | str | `"low"` / `"medium"` / `"high"` / `"xhigh"` |
 | `skill_directories` | list[str] | Skill directories to load |
 | `disabled_skills` | list[str] | Skills to disable |
 | `available_tools` | list[str] | Restrict available tools |
 | `excluded_tools` | list[str] | Exclude specific tools |
 | `infinite_sessions` | dict | Auto-compaction config |
 | `working_directory` | str | Working directory |
-| `agent` | str | Agent to use |
 | `config_dir` | str | Config directory |
 
-### ProviderConfig
+### ProviderConfig (dict)
 
 ```python
 {
     "type": "openai" | "azure" | "anthropic",
-    "base_url": str,        # Required
-    "api_key": str,          # Optional for local providers
-    "bearer_token": str,     # Takes precedence over api_key
+    "base_url": str,         # Required
+    "api_key": str,           # Optional for local providers
+    "bearer_token": str,      # Takes precedence over api_key
     "wire_api": "completions" | "responses",  # Default: "completions"
-    "azure": {"api_version": str},  # Default: "2024-10-21"
+    "azure": {"api_version": str},            # Default: "2024-10-21"
 }
 ```
 
-### InfiniteSessionConfig
+### InfiniteSessionConfig (dict)
 
 ```python
 {
     "enabled": True,
     "background_compaction_threshold": 0.80,  # 0.0-1.0
-    "buffer_exhaustion_threshold": 0.95,      # 0.0-1.0
+    "buffer_exhaustion_threshold": 0.95,
 }
 ```
 
-### TelemetryConfig
+### TelemetryConfig (dict)
 
 ```python
 {
@@ -205,6 +202,20 @@ ExternalServerConfig(url: str)  # "host:port", "http://host:port", or "port"
 }
 ```
 
+### CustomAgentConfig (dict)
+
+```python
+{
+    "name": str,              # Required
+    "display_name": str,
+    "description": str,
+    "tools": list[str] | None,  # None = all tools
+    "prompt": str,            # Required
+    "mcp_servers": dict,
+    "infer": bool,            # Default: True
+}
+```
+
 ---
 
 ## Tool Types
@@ -212,6 +223,8 @@ ExternalServerConfig(url: str)  # "host:port", "http://host:port", or "port"
 ### Tool (dataclass)
 
 ```python
+from copilot.tools import Tool
+
 Tool(
     name: str,
     description: str,
@@ -222,15 +235,18 @@ Tool(
 )
 ```
 
-### ToolInvocation (dataclass)
+### define_tool decorator
 
 ```python
-ToolInvocation(
-    session_id: str,
-    tool_call_id: str,
-    tool_name: str,
-    arguments: Any,
-)
+from copilot.tools import define_tool
+from pydantic import BaseModel, Field
+
+class MyParams(BaseModel):
+    value: str = Field(description="Input value")
+
+@define_tool(description="Process a value")
+async def process_value(params: MyParams) -> str:
+    return f"Processed: {params.value}"
 ```
 
 ### ToolResult (dataclass)
@@ -241,7 +257,6 @@ ToolResult(
     result_type: str = "success",  # "success"|"failure"|"rejected"|"denied"
     error: str | None = None,
     binary_results_for_llm: list | None = None,
-    session_log: str | None = None,
 )
 ```
 
@@ -252,8 +267,7 @@ ToolResult(
 ### PermissionHandler
 
 ```python
-from copilot import PermissionHandler
-# Static method — approves all tool calls
+from copilot.session import PermissionHandler
 PermissionHandler.approve_all(request, invocation) -> PermissionRequestResult
 ```
 
@@ -273,9 +287,11 @@ request.url
 ### PermissionRequestResult
 
 ```python
+from copilot.session import PermissionRequestResult
+
 PermissionRequestResult(
     kind: str,  # "approved"|"denied-interactively-by-user"|"denied-by-rules"|
-                # "denied-no-approval-rule-and-could-not-request-from-user"|"no-result"
+                # "denied-no-approval-rule-and-could-not-request-from-user"
     feedback: str | None = None,
     message: str | None = None,
 )
@@ -298,74 +314,32 @@ PermissionRequestResult(
 }
 ```
 
+### Hook Input Fields
+
+**on_pre_tool_use input:** `toolName`, `toolArgs`, `timestamp`
+**on_post_tool_use input:** `toolName`, `toolResult`, `timestamp`
+**on_user_prompt_submitted input:** `prompt`, `timestamp`
+**on_session_start input:** `source` ("startup"/"resume"/"new"), `cwd`, `timestamp`
+**on_session_end input:** `reason`, `timestamp`
+**on_error_occurred input:** `error`, `errorContext` ("model_call"/"tool_execution"/"system"), `recoverable`, `timestamp`
+
 ### Hook Return Fields
 
-**on_pre_tool_use:**
-- `permissionDecision`: `"allow"` | `"deny"` | `"ask"`
-- `permissionDecisionReason`: str
-- `modifiedArgs`: dict
-- `additionalContext`: str
-- `suppressOutput`: bool
-
-**on_post_tool_use:**
-- `modifiedResult`: str
-- `additionalContext`: str
-- `suppressOutput`: bool
-
-**on_user_prompt_submitted:**
-- `modifiedPrompt`: str
-- `additionalContext`: str
-- `suppressOutput`: bool
-
-**on_error_occurred:**
-- `errorHandling`: `"retry"` | `"skip"` | `"abort"`
-- `retryCount`: int
-- `userNotification`: str
-- `suppressOutput`: bool
-
----
-
-## Event Types
-
-### SessionEventType (key values)
-
-| Event | Description |
-|-------|-------------|
-| `assistant.message` | Final assistant message |
-| `assistant.message_delta` | Streaming message chunk |
-| `assistant.reasoning` | Final reasoning content |
-| `assistant.reasoning_delta` | Streaming reasoning chunk |
-| `session.idle` | Session finished processing |
-| `session.error` | Error occurred |
-| `session.compaction_start` | Background compaction started |
-| `session.compaction_complete` | Compaction finished |
-| `user.message` | User message |
-| `tool.execution_start` | Tool execution started |
-| `tool.execution_complete` | Tool execution completed |
-| `permission.requested` | Permission requested |
-| `external_tool.requested` | External tool requested |
-
-### SessionEvent
-
-```python
-event.type      # SessionEventType enum
-event.type.value  # String value (e.g., "assistant.message")
-event.data      # Event-specific data
-event.id        # UUID
-event.timestamp # datetime
-event.parent_id # UUID | None
-```
+**on_pre_tool_use:** `permissionDecision` ("allow"/"deny"/"ask"), `permissionDecisionReason`, `modifiedArgs`, `additionalContext`, `suppressOutput`
+**on_post_tool_use:** `modifiedResult`, `additionalContext`, `suppressOutput`
+**on_user_prompt_submitted:** `modifiedPrompt`, `additionalContext`, `suppressOutput`
+**on_session_start:** `additionalContext`
+**on_error_occurred:** `errorHandling` ("retry"/"skip"/"abort"), `retryCount`, `userNotification`, `suppressOutput`
 
 ---
 
 ## System Message Types
 
-### Append (default mode)
+### Append (default)
 
 ```python
-{"content": "Additional instructions here"}
-# or explicitly:
-{"mode": "append", "content": "Additional instructions"}
+{"content": "Additional instructions"}
+# or: {"mode": "append", "content": "Additional instructions"}
 ```
 
 ### Replace
@@ -384,6 +358,7 @@ event.parent_id # UUID | None
         "tone": {"action": "remove"},
         "guidelines": {"action": "append", "content": "Always cite sources."},
     },
+    "content": "Additional instructions appended after sections.",
 }
 ```
 
@@ -416,7 +391,7 @@ event.parent_id # UUID | None
 ### ModelInfo
 
 ```python
-model.id                    # e.g., "gpt-5"
+model.id                    # e.g., "gpt-4.1"
 model.name                  # Display name
 model.capabilities.supports.vision  # bool
 model.supported_reasoning_efforts   # list[str] | None
@@ -439,15 +414,11 @@ auth.authType           # str | None
 auth.login              # str | None
 ```
 
-### CustomAgentConfig
+### MessageOptions (dict for send/send_and_wait)
 
 ```python
 {
-    "name": str,
-    "display_name": str | None,
-    "description": str | None,
-    "tools": list[str] | None,
-    "prompt": str,
-    "mcp_servers": dict | None,
+    "prompt": str,                          # Required
+    "mode": "enqueue" | "immediate",        # Default: "enqueue"
 }
 ```

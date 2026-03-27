@@ -32,6 +32,7 @@
 | 11 | [11_agent_tool_scoping](11_agent_tool_scoping/) | Agent 工具範圍控制 — `tools`、`infer`、`agent` 屬性 |
 | 12 | [12_agent_mcp_servers](12_agent_mcp_servers/) | Agent 專屬 MCP 伺服器 — 每個 agent 掛載獨立 MCP |
 | 13 | [13_subagent_events](13_subagent_events/) | Sub-Agent 事件監控 — 生命週期事件與活動追蹤 |
+| 14 | [14_openlit_observability](14_openlit_observability/) | OpenLIT LLM 可觀測性 — TelemetryConfig + 視覺化 Dashboard |
 
 ## 執行方式
 
