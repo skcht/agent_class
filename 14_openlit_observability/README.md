@@ -4,6 +4,8 @@
 
 Copilot SDK 內建 OpenTelemetry 支援，透過 `TelemetryConfig` 將 traces 與 metrics 送往任何 OTLP 端點。搭配 OpenLIT 平台，可以一站式收集、儲存並視覺化 LLM 呼叫的完整觀測資料。
 
+https://github.com/github/copilot-sdk/blob/main/docs/observability/opentelemetry.md
+
 ### 架構
 
 ```

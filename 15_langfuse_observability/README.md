@@ -110,6 +110,49 @@ class LangfuseTracer:
 | 額外功能 | metrics、成本分析 | evaluations、prompt management、datasets |
 | 部署複雜度 | 單一 Docker 容器 | 需要 PostgreSQL + Langfuse 容器 |
 
+### 為什麼不用 SDK 內建的 `telemetry`？
+
+Copilot SDK 有內建的 OpenTelemetry 支援，只需一行設定就能自動匯出 spans：
+
+```python
+from copilot import CopilotClient, SubprocessConfig
+
+client = CopilotClient(SubprocessConfig(
+    telemetry={"otlp_endpoint": "http://localhost:4318"}
+))
+```
+
+Langfuse 也支援 OTLP 接收，理論上可以把 SDK telemetry 直接送到 Langfuse。但本課選擇手動 event 映射，原因如下：
+
+#### 兩者記錄的層級不同
+
+| 面向 | SDK 內建 `telemetry` | 手動 event 映射（本課做法） |
+|------|---------------------|---------------------------|
+| LLM generation（model、tokens、cost） | 無，只有 generic span | 有，精確記錄為 Langfuse `generation` |
+| Tool execution spans | 有（自動） | 有（手動） |
+| SDK/CLI 內部 spans | 有（自動） | 無 |
+| Langfuse `session_id` / `user_id` | 需額外設定 | 直接支援 |
+| Langfuse generation 類型 | 無（全部是 generic span） | 有（帶 model / tokens / cost） |
+
+> SDK `telemetry` 記錄的是 **infrastructure 層級**（SDK 花了多久建立 session、CLI process 生命週期），
+> 適合搭配 Jaeger / Grafana Tempo 做 DevOps 監控。
+>
+> 手動 event 映射記錄的是 **LLM 語意層級**（哪個 model、多少 tokens、cost 多少），
+> 這才是 Langfuse 作為 LLM Observability 平台最有價值的資訊。
+
+#### 兩者不能同時用嗎？
+
+技術上可以，但不建議。兩套機制會產生**獨立的 trace**，無法自動合併：
+
+```
+SDK telemetry (OTLP)  →  Langfuse Trace A  (trace_id: aaa-111)
+手動 event tracer      →  Langfuse Trace B  (trace_id: bbb-222)
+```
+
+結果是同一個 prompt 在 Dashboard 出現兩條不相關的 trace，反而造成混亂。
+要合併需要跨 process 傳遞 W3C Trace Context，但 Python SDK 的 trace context
+產生在 CLI subprocess 內部，`session.on()` 拿不到，實作複雜度過高。
+
 ### 程式碼重點
 
 ```python

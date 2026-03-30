@@ -1,7 +1,10 @@
 """
 02 — 事件驅動訊息模式
 
-展示非阻塞 send() + session.on() 事件處理器。
+send_and_wait 會凍住程式直到 AI 回完。
+send() 不會 — 送出後程式繼續跑，AI 回覆透過事件通知你。
+
+本範例證明：送出問題後，程式仍然可以同時做別的事。
 """
 
 import asyncio
@@ -18,38 +21,41 @@ async def main():
     )
 
     done = asyncio.Event()
-    message_count = 0
+    answer = None
+    events_log = []
 
     def on_event(event):
-        nonlocal message_count
+        nonlocal answer
         event_type = event.type.value
+        events_log.append(event_type)
 
         if event_type == "assistant.message":
-            message_count += 1
-            print(f"\n[訊息 #{message_count}] {event.data.content}")
+            answer = event.data.content
         elif event_type == "session.idle":
             done.set()
 
-    # 註冊事件處理器（返回 unsubscribe 函式）
     unsubscribe = session.on(on_event)
 
-    # 第一輪對話
-    print(">>> 送出第一個問題...")
-    await session.send("My name is Alice. Remember it.")
-    await done.wait()
+    # ---- 非阻塞送出 ----
+    print(">>> 送出問題（send 立刻返回，不等回覆）\n")
+    await session.send("Name 3 Python web frameworks in one sentence.")
 
-    # 重置，進行第二輪
-    done.clear()
-    print("\n>>> 送出第二個問題...")
-    await session.send("What is my name?")
-    await done.wait()
+    # ---- 程式沒凍住，同時做別的事 ----
+    # 如果用 send_and_wait，下面這段完全無法執行，因為程式卡在等 AI
+    bg_count = 0
+    while not done.is_set():
+        bg_count += 1
+        print(f"  ⚙️  背景工作 #{bg_count}（AI 還在想...）")
+        await asyncio.sleep(0.5)
 
-    # 取消訂閱並清理
+    # ---- 結果 ----
+    print(f"\n💬 AI 回覆:\n{answer}")
+    print(f"\n📊 等 AI 的期間，程式同時完成了 {bg_count} 次背景工作")
+    print(f"📡 過程中收到的事件: {events_log}")
+
     unsubscribe()
     await session.disconnect()
     await client.stop()
-
-    print(f"\n共收到 {message_count} 則回覆")
 
 
 if __name__ == "__main__":
