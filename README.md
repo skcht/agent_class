@@ -36,6 +36,7 @@
 | 15 | [15_langfuse_observability](15_langfuse_observability/) | Langfuse LLM 可觀測性 — 手動 event 映射 + Traces/Generations |
 | 16 | [16_context_management](16_context_management/) | 上下文管理 — `infinite_sessions` + 長對話壓縮策略 |
 | 17 | [17_safety_config](17_safety_config/) | 安全設定 — `working_directory` + 路徑檢查把 Agent 關在資料夾裡 |
+| 18 | [18_memory](18_memory/) | Agent 記憶 — Hooks + Events 實作跨 Session 記憶 |
 
 ## 執行方式
 

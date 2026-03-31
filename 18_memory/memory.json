@@ -1,0 +1,7 @@
+{
+  "summaries": [
+    "你正在使用 **FastAPI + PostgreSQL** 建立網頁應用程式。我們討論了 FastAPI 專案結構的三個最佳實踐（模組化路由、分層架構、集中管理設定），以及 PostgreSQL 全文搜尋方案。建議使用內建的 **`tsvector/tsquery` + GIN 索引**作為主要全文搜尋方案，必要時搭配 **`pg_trgm`** 處理模糊搜尋。",
+    "針對 FastAPI + PostgreSQL 專案，討論了部署策略：建議使用 Docker 容器化搭配 Nginx 反向代理，並視規模選擇 Railway/Render（簡單）或 AWS/GCP（擴展），同時強調連線池與 GIN 索引需在部署時一併配置。"
+  ],
+  "updated_at": "2026-03-31T10:29:56.039670+00:00"
+}
