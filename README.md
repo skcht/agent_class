@@ -33,6 +33,9 @@
 | 12 | [12_agent_mcp_servers](12_agent_mcp_servers/) | Agent 專屬 MCP 伺服器 — 每個 agent 掛載獨立 MCP |
 | 13 | [13_subagent_events](13_subagent_events/) | Sub-Agent 事件監控 — 生命週期事件與活動追蹤 |
 | 14 | [14_openlit_observability](14_openlit_observability/) | OpenLIT LLM 可觀測性 — TelemetryConfig + 視覺化 Dashboard |
+| 15 | [15_langfuse_observability](15_langfuse_observability/) | Langfuse LLM 可觀測性 — 手動 event 映射 + Traces/Generations |
+| 16 | [16_context_management](16_context_management/) | 上下文管理 — `infinite_sessions` + 長對話壓縮策略 |
+| 17 | [17_safety_config](17_safety_config/) | 安全設定 — `working_directory` + 路徑檢查把 Agent 關在資料夾裡 |
 
 ## 執行方式
 
