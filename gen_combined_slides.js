@@ -96,8 +96,8 @@ for (const part of PARTS) {
   }
 }
 
-// 1 cover + 1 TOC + 7 dividers + lesson slides + 1 closing
-const GRAND_TOTAL = 1 + 1 + PARTS.length + totalLessonSlides + 1;
+// 1 cover + 3 intro + 1 TOC + 7 dividers + lesson slides + 3 closing
+const GRAND_TOTAL = 1 + 3 + 1 + PARTS.length + totalLessonSlides + 3;
 let slideCounter = 0;
 
 // --- Shared Helpers ---
@@ -200,6 +200,252 @@ function addCoverSlide() {
     });
   });
 
+  addNumG(s);
+}
+
+// --- Intro Slide 1: Why Copilot SDK? ---
+function addIntroWhy() {
+  const s = pres.addSlide();
+  s.background = { color: C.bgDark };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.06, fill: { color: C.blue } });
+
+  s.addText("為什麼要學 Copilot SDK？", {
+    x: 0.8, y: 0.3, w: 8.4, h: 0.7,
+    fontSize: 32, fontFace: FT, color: C.white, bold: true, align: "left",
+  });
+
+  // Problem statement
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 1.2, w: 4.3, h: 2.5, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 1.2, w: 4.3, h: 0.05, fill: { color: C.red } });
+  s.addText("自己打造 AI Agent 的痛點", {
+    x: 0.7, y: 1.3, w: 3.9, h: 0.4,
+    fontSize: 13, fontFace: FB, color: C.red, bold: true, align: "left", valign: "middle",
+  });
+  s.addText([
+    { text: "自建 Prompt 編排邏輯複雜", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "Tool calling 與權限管理難以維護", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "檔案操作、Git 整合需自行實作", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "Context window 管理容易出錯", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "可觀測性和安全性被忽略", options: { bullet: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+  ], { x: 0.9, y: 1.8, w: 3.7, h: 1.8, valign: "top", paraSpaceAfter: 4 });
+
+  // Solution
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.2, w: 4.3, h: 2.5, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.2, w: 4.3, h: 0.05, fill: { color: C.green } });
+  s.addText("Copilot SDK 替你解決", {
+    x: 5.4, y: 1.3, w: 3.9, h: 0.4,
+    fontSize: 13, fontFace: FB, color: C.green, bold: true, align: "left", valign: "middle",
+  });
+  s.addText([
+    { text: "同一套 Copilot CLI 引擎，經過生產驗證", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "內建 Planning · Tool Invocation · File Edit", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "定義行為即可，不需自建編排", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "支援 BYOK — 無需 Copilot 訂閱也能用", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 12 } },
+    { text: "Python / TS / Go / .NET / Java 五種 SDK", options: { bullet: true, color: C.white, fontFace: FB, fontSize: 12, bold: true } },
+  ], { x: 5.6, y: 1.8, w: 3.7, h: 1.8, valign: "top", paraSpaceAfter: 4 });
+
+  // Bottom highlight
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 4.0, w: 9.0, h: 0.7, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 4.0, w: 0.08, h: 0.7, fill: { color: C.blue } });
+  s.addText("「你定義 Agent 的行為，Copilot 處理 Planning、Tool invocation、File edits 等其餘一切。」", {
+    x: 0.8, y: 4.0, w: 8.5, h: 0.7,
+    fontSize: 13, fontFace: FB, color: C.grayLight, italic: true,
+    align: "left", valign: "middle",
+  });
+
+  addFooterG(s, SERIES_NAME);
+  addNumG(s);
+}
+
+// --- Intro Slide 2: Architecture ---
+function addIntroArch() {
+  const s = pres.addSlide();
+  s.background = { color: C.bgDark };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.06, fill: { color: C.cyan } });
+
+  s.addText("Copilot SDK 架構總覽", {
+    x: 0.8, y: 0.3, w: 8.4, h: 0.7,
+    fontSize: 32, fontFace: FT, color: C.white, bold: true, align: "left",
+  });
+
+  // Architecture diagram — horizontal flow
+  const boxes = [
+    { label: "Your App\n(Python)", color: C.blue, x: 0.5 },
+    { label: "SDK Client\n(JSON-RPC)", color: C.cyan, x: 2.6 },
+    { label: "Copilot CLI\n(Server Mode)", color: C.green, x: 4.7 },
+    { label: "Model\nProvider", color: C.purple, x: 6.8 },
+  ];
+  boxes.forEach((b) => {
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: b.x, y: 1.3, w: 1.8, h: 0.9,
+      fill: { color: C.bgCard },
+    });
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: b.x, y: 1.3, w: 1.8, h: 0.04,
+      fill: { color: b.color },
+    });
+    s.addText(b.label, {
+      x: b.x, y: 1.38, w: 1.8, h: 0.78,
+      fontSize: 11, fontFace: FB, color: C.white,
+      align: "center", valign: "middle", bold: true,
+    });
+  });
+  // Arrows between boxes
+  const arrows = [
+    { x: 2.35, label: "async" },
+    { x: 4.45, label: "stdio/TCP" },
+    { x: 6.55, label: "API" },
+  ];
+  arrows.forEach((a) => {
+    s.addText("\u2192", {
+      x: a.x, y: 1.3, w: 0.25, h: 0.9,
+      fontSize: 18, fontFace: FB, color: C.grayDim,
+      align: "center", valign: "middle",
+    });
+    s.addText(a.label, {
+      x: a.x - 0.15, y: 2.2, w: 0.55, h: 0.3,
+      fontSize: 8, fontFace: FC, color: C.grayDim,
+      align: "center", valign: "top",
+    });
+  });
+  // MCP Server branch
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 8.8, y: 1.3, w: 0.9, h: 0.9,
+    fill: { color: C.bgCard },
+  });
+  s.addShape(pres.shapes.RECTANGLE, {
+    x: 8.8, y: 1.3, w: 0.9, h: 0.04,
+    fill: { color: C.orange },
+  });
+  s.addText("MCP\nServers", {
+    x: 8.8, y: 1.38, w: 0.9, h: 0.78,
+    fontSize: 10, fontFace: FB, color: C.white,
+    align: "center", valign: "middle", bold: true,
+  });
+  s.addText("\u2191", {
+    x: 7.3, y: 1.3, w: 1.5, h: 0.9,
+    fontSize: 14, fontFace: FB, color: C.grayDim,
+    align: "right", valign: "middle",
+  });
+
+  // Key capabilities — 2 rows × 3 columns
+  const caps = [
+    { icon: "\u26A1", name: "Events & Streaming", desc: "40+ 事件類型，即時串流", color: C.blue },
+    { icon: "\uD83D\uDD27", name: "Custom Tools", desc: "@define_tool + Pydantic", color: C.purple },
+    { icon: "\uD83E\uDD16", name: "Custom Agents", desc: "角色 · 工具範圍 · Sub-agent", color: C.green },
+    { icon: "\uD83D\uDD12", name: "Permissions", desc: "逐工具批准 / 拒絕", color: C.orange },
+    { icon: "\uD83D\uDCC8", name: "Observability", desc: "OpenTelemetry · Langfuse", color: C.yellow },
+    { icon: "\uD83D\uDCBE", name: "Persistence", desc: "Session 恢復 · 記憶", color: C.cyan },
+  ];
+  caps.forEach((c, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const cx = 0.5 + col * 3.1;
+    const cy = 2.8 + row * 1.05;
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: cx, y: cy, w: 2.9, h: 0.9,
+      fill: { color: C.bgCard },
+    });
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: cx, y: cy, w: 0.06, h: 0.9,
+      fill: { color: c.color },
+    });
+    s.addText(c.name, {
+      x: cx + 0.2, y: cy + 0.05, w: 2.5, h: 0.4,
+      fontSize: 12, fontFace: FB, color: c.color, bold: true,
+      align: "left", valign: "middle",
+    });
+    s.addText(c.desc, {
+      x: cx + 0.2, y: cy + 0.45, w: 2.5, h: 0.35,
+      fontSize: 10, fontFace: FB, color: C.grayLight,
+      align: "left", valign: "top",
+    });
+  });
+
+  addFooterG(s, SERIES_NAME);
+  addNumG(s);
+}
+
+// --- Intro Slide 3: SDK Ecosystem & Setup ---
+function addIntroSetup() {
+  const s = pres.addSlide();
+  s.background = { color: C.bgDark };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.06, fill: { color: C.green } });
+
+  s.addText("SDK 生態系與開發環境", {
+    x: 0.8, y: 0.3, w: 8.4, h: 0.7,
+    fontSize: 32, fontFace: FT, color: C.white, bold: true, align: "left",
+  });
+
+  // SDK table
+  const sdks = [
+    { lang: "Python", pkg: "pip install github-copilot-sdk", note: "本課程使用", highlight: true },
+    { lang: "Node.js / TS", pkg: "npm install @github/copilot-sdk", note: "", highlight: false },
+    { lang: "Go", pkg: "go get github.com/github/copilot-sdk/go", note: "", highlight: false },
+    { lang: ".NET", pkg: "dotnet add package GitHub.Copilot.SDK", note: "", highlight: false },
+    { lang: "Java", pkg: "com.github:copilot-sdk-java (Maven)", note: "", highlight: false },
+  ];
+
+  // Table header
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 1.2, w: 9.0, h: 0.4, fill: { color: C.bgCardLight } });
+  s.addText("Language", { x: 0.7, y: 1.2, w: 1.8, h: 0.4, fontSize: 11, fontFace: FB, color: C.gray, bold: true, align: "left", valign: "middle" });
+  s.addText("Installation", { x: 2.5, y: 1.2, w: 5.5, h: 0.4, fontSize: 11, fontFace: FB, color: C.gray, bold: true, align: "left", valign: "middle" });
+
+  sdks.forEach((sdk, i) => {
+    const ry = 1.6 + i * 0.42;
+    const bg = sdk.highlight ? C.bgCardLight : (i % 2 === 0 ? C.bgCard : C.bgDark);
+    s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: ry, w: 9.0, h: 0.4, fill: { color: bg } });
+    if (sdk.highlight) {
+      s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: ry, w: 0.06, h: 0.4, fill: { color: C.green } });
+    }
+    s.addText(sdk.lang, {
+      x: 0.7, y: ry, w: 1.8, h: 0.4,
+      fontSize: 11, fontFace: FB, color: sdk.highlight ? C.white : C.grayLight,
+      bold: sdk.highlight, align: "left", valign: "middle",
+    });
+    s.addText(sdk.pkg, {
+      x: 2.5, y: ry, w: 5.5, h: 0.4,
+      fontSize: 10, fontFace: FC, color: sdk.highlight ? C.green : C.grayLight,
+      align: "left", valign: "middle",
+    });
+    if (sdk.note) {
+      s.addText(sdk.note, {
+        x: 8.2, y: ry, w: 1.2, h: 0.4,
+        fontSize: 9, fontFace: FB, color: C.green, bold: true,
+        align: "right", valign: "middle",
+      });
+    }
+  });
+
+  // Prerequisites card
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 3.8, w: 4.3, h: 1.2, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 3.8, w: 4.3, h: 0.04, fill: { color: C.orange } });
+  s.addText("前置需求", {
+    x: 0.7, y: 3.85, w: 3.9, h: 0.35,
+    fontSize: 12, fontFace: FB, color: C.orange, bold: true,
+    align: "left", valign: "middle",
+  });
+  s.addText([
+    { text: "Python 3.11+ (async/await)", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 11 } },
+    { text: "Copilot CLI 已安裝 (copilot --version)", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 11 } },
+    { text: "GitHub Copilot 訂閱 或 BYOK", options: { bullet: true, color: C.grayLight, fontFace: FB, fontSize: 11 } },
+  ], { x: 0.9, y: 4.2, w: 3.7, h: 0.7, valign: "top", paraSpaceAfter: 2 });
+
+  // Links card
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 3.8, w: 4.3, h: 1.2, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 3.8, w: 4.3, h: 0.04, fill: { color: C.blue } });
+  s.addText("官方資源連結", {
+    x: 5.4, y: 3.85, w: 3.9, h: 0.35,
+    fontSize: 12, fontFace: FB, color: C.blue, bold: true,
+    align: "left", valign: "middle",
+  });
+  s.addText([
+    { text: "github.com/github/copilot-sdk", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FC, fontSize: 10 } },
+    { text: "pypi.org/project/github-copilot-sdk", options: { bullet: true, breakLine: true, color: C.grayLight, fontFace: FC, fontSize: 10 } },
+    { text: "github.com/github/awesome-copilot", options: { bullet: true, color: C.grayLight, fontFace: FC, fontSize: 10 } },
+  ], { x: 5.6, y: 4.2, w: 3.7, h: 0.7, valign: "top", paraSpaceAfter: 2 });
+
+  addFooterG(s, SERIES_NAME);
   addNumG(s);
 }
 
@@ -309,7 +555,149 @@ function addSectionDivider(part, partIndex) {
   addNumG(s);
 }
 
-function addClosingSlide() {
+// --- Closing Slide 1: Course Review ---
+function addClosingReview() {
+  const s = pres.addSlide();
+  s.background = { color: C.bgDark };
+
+  const colors = PARTS.map((p) => p.color);
+  const segW = 10 / colors.length;
+  colors.forEach((color, i) => {
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: segW * i, y: 0, w: segW + 0.01, h: 0.08,
+      fill: { color },
+    });
+  });
+
+  s.addText("課程回顧", {
+    x: 0.8, y: 0.25, w: 8.4, h: 0.6,
+    fontSize: 32, fontFace: FT, color: C.white, bold: true, align: "left",
+  });
+
+  // 7 part summary — compact list
+  const reviews = [
+    { part: "Part 1", title: "核心基礎", detail: "Client 生命週期 · send / send_and_wait · Events · Streaming · 權限處理", color: C.blue },
+    { part: "Part 2", title: "工具與擴充", detail: "@define_tool + Pydantic · 6 種 Session Hook · MCP Server 整合", color: C.purple },
+    { part: "Part 3", title: "進階設定", detail: "BYOK (OpenAI / Azure / Ollama) · Session 斷線恢復 · ID 持久化", color: C.orange },
+    { part: "Part 4", title: "Agent 框架", detail: "自訂角色 · 工具範圍控制 · Agent 專屬 MCP · Sub-agent 事件追蹤", color: C.green },
+    { part: "Part 5", title: "可觀測性", detail: "OpenLIT 一站式儀表板 · Langfuse Trace 分析 · 成本與延遲監控", color: C.yellow },
+    { part: "Part 6", title: "安全與上下文", detail: "infinite_sessions 自動壓縮 · working_directory 沙箱 · 三層防護", color: C.red },
+    { part: "Part 7", title: "記憶系統", detail: "Hooks + Events 跨 Session 記憶 · Compact Prompt 結構化壓縮", color: C.purple },
+  ];
+
+  reviews.forEach((r, i) => {
+    const ry = 1.05 + i * 0.57;
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: 0.5, y: ry, w: 9.0, h: 0.5,
+      fill: { color: i % 2 === 0 ? C.bgCard : C.bgCardLight },
+    });
+    s.addShape(pres.shapes.RECTANGLE, {
+      x: 0.5, y: ry, w: 0.08, h: 0.5,
+      fill: { color: r.color },
+    });
+    s.addText(r.part, {
+      x: 0.7, y: ry, w: 0.8, h: 0.5,
+      fontSize: 11, fontFace: FB, color: r.color, bold: true,
+      align: "left", valign: "middle",
+    });
+    s.addText(r.title, {
+      x: 1.55, y: ry, w: 1.6, h: 0.5,
+      fontSize: 12, fontFace: FB, color: C.white, bold: true,
+      align: "left", valign: "middle",
+    });
+    s.addText(r.detail, {
+      x: 3.2, y: ry, w: 6.2, h: 0.5,
+      fontSize: 10, fontFace: FB, color: C.grayLight,
+      align: "left", valign: "middle",
+    });
+  });
+
+  addFooterG(s, SERIES_NAME);
+  addNumG(s);
+}
+
+// --- Closing Slide 2: Resources & Next Steps ---
+function addClosingResources() {
+  const s = pres.addSlide();
+  s.background = { color: C.bgDark };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 0.06, fill: { color: C.blue } });
+
+  s.addText("進階資源與下一步", {
+    x: 0.8, y: 0.25, w: 8.4, h: 0.6,
+    fontSize: 32, fontFace: FT, color: C.white, bold: true, align: "left",
+  });
+
+  // Official resources
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 1.1, w: 4.3, h: 2.6, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 1.1, w: 4.3, h: 0.05, fill: { color: C.blue } });
+  s.addText("官方資源", {
+    x: 0.7, y: 1.2, w: 3.9, h: 0.35,
+    fontSize: 13, fontFace: FB, color: C.blue, bold: true,
+    align: "left", valign: "middle",
+  });
+  const links = [
+    { label: "SDK Repository", url: "github.com/github/copilot-sdk" },
+    { label: "Python SDK (PyPI)", url: "pypi.org/project/github-copilot-sdk" },
+    { label: "Cookbook & Recipes", url: "github.com/github/awesome-copilot" },
+    { label: "Getting Started Guide", url: "copilot-sdk/docs/getting-started.md" },
+    { label: "Features & API Docs", url: "copilot-sdk/docs/features/index.md" },
+    { label: "BYOK Setup", url: "copilot-sdk/docs/auth/byok.md" },
+  ];
+  links.forEach((link, i) => {
+    const ly = 1.6 + i * 0.33;
+    s.addText(link.label, {
+      x: 0.7, y: ly, w: 1.8, h: 0.3,
+      fontSize: 10, fontFace: FB, color: C.white,
+      align: "left", valign: "middle",
+    });
+    s.addText(link.url, {
+      x: 2.5, y: ly, w: 2.1, h: 0.3,
+      fontSize: 9, fontFace: FC, color: C.gray,
+      align: "left", valign: "middle",
+    });
+  });
+
+  // Next steps
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.1, w: 4.3, h: 2.6, fill: { color: C.bgCard } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.1, w: 4.3, h: 0.05, fill: { color: C.green } });
+  s.addText("建議下一步", {
+    x: 5.4, y: 1.2, w: 3.9, h: 0.35,
+    fontSize: 13, fontFace: FB, color: C.green, bold: true,
+    align: "left", valign: "middle",
+  });
+  s.addText([
+    { text: "1. 跑過所有課程範例 (main.py)", options: { breakLine: true, color: C.white, fontFace: FB, fontSize: 11, bold: true } },
+    { text: "   熟悉每個 API 的實際行為", options: { breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 10 } },
+    { text: "", options: { fontSize: 5, breakLine: true } },
+    { text: "2. 打造你自己的 Agent", options: { breakLine: true, color: C.white, fontFace: FB, fontSize: 11, bold: true } },
+    { text: "   結合 Custom Tools + Hooks + MCP", options: { breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 10 } },
+    { text: "", options: { fontSize: 5, breakLine: true } },
+    { text: "3. 加入可觀測性與安全防護", options: { breakLine: true, color: C.white, fontFace: FB, fontSize: 11, bold: true } },
+    { text: "   上線前的必備功課", options: { breakLine: true, color: C.grayLight, fontFace: FB, fontSize: 10 } },
+    { text: "", options: { fontSize: 5, breakLine: true } },
+    { text: "4. 部署到生產環境", options: { breakLine: true, color: C.white, fontFace: FB, fontSize: 11, bold: true } },
+    { text: "   參考 docs/setup/scaling.md", options: { color: C.grayLight, fontFace: FC, fontSize: 10 } },
+  ], { x: 5.4, y: 1.6, w: 3.9, h: 2.0, valign: "top" });
+
+  // SDK version info
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 4.0, w: 9.0, h: 0.7, fill: { color: C.bgCard } });
+  s.addText([
+    { text: "SDK 版本: ", options: { color: C.gray, fontFace: FB, fontSize: 11 } },
+    { text: "github-copilot-sdk >= 0.2.0", options: { color: C.cyan, fontFace: FC, fontSize: 11 } },
+    { text: "  |  License: ", options: { color: C.gray, fontFace: FB, fontSize: 11 } },
+    { text: "MIT", options: { color: C.green, fontFace: FC, fontSize: 11 } },
+    { text: "  |  Status: ", options: { color: C.gray, fontFace: FB, fontSize: 11 } },
+    { text: "Technical Preview", options: { color: C.yellow, fontFace: FC, fontSize: 11 } },
+    { text: "  |  ", options: { color: C.grayDim, fontFace: FB, fontSize: 11 } },
+    { text: "8,099 stars", options: { color: C.white, fontFace: FB, fontSize: 11 } },
+  ], { x: 0.7, y: 4.0, w: 8.6, h: 0.7, valign: "middle" });
+
+  addFooterG(s, SERIES_NAME);
+  addNumG(s);
+}
+
+// --- Closing Slide 3: Final ---
+function addClosingFinal() {
   const s = pres.addSlide();
   s.background = { color: C.bgDark };
 
@@ -430,6 +818,13 @@ console.log(`\n=== Generating combined_slides.pptx (${GRAND_TOTAL} slides) ===\n
 addCoverSlide();
 console.log("  + Cover slide");
 
+addIntroWhy();
+console.log("  + Intro: Why Copilot SDK?");
+addIntroArch();
+console.log("  + Intro: Architecture");
+addIntroSetup();
+console.log("  + Intro: Ecosystem & Setup");
+
 addTocSlide();
 console.log("  + TOC slide");
 
@@ -444,8 +839,12 @@ for (let pi = 0; pi < PARTS.length; pi++) {
   }
 }
 
-addClosingSlide();
-console.log("  + Closing slide");
+addClosingReview();
+console.log("  + Closing: Course review");
+addClosingResources();
+console.log("  + Closing: Resources & next steps");
+addClosingFinal();
+console.log("  + Closing: Final");
 console.log(`\n  Total: ${slideCounter} / ${GRAND_TOTAL} slides`);
 
 pres
